@@ -7,6 +7,11 @@ screensaver_in_focus() {
 }
 
 exit_screensaver() {
+  # A dismissal before arming must not leave the arming job polling, or let it
+  # arm after the reset below.
+  if [[ -n ${arm_pid:-} ]]; then
+    kill "$arm_pid" 2>/dev/null
+  fi
   printf '\033[?1003l\033[?1006l'  # Stop mouse reporting before the pty goes away
   hyprctl eval 'hl.config({ cursor = { invisible = false } })' &>/dev/null || hyprctl keyword cursor:invisible false &>/dev/null || true
   pkill -x ttfx 2>/dev/null
@@ -71,6 +76,7 @@ wait_for_terminal_resize
 # Backgrounded so the read loop starts now, keeping the keyboard responsive from
 # the first frame; the mouse joins once reporting is armed.
 arm_mouse_reporting &
+arm_pid=$!
 
 while true; do
   ttfx -i ~/.config/omarchy/branding/screensaver.txt \
