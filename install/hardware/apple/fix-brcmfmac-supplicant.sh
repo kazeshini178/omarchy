@@ -18,11 +18,16 @@
 # machines including the T2-less iMac19,1 and iMac19,2, and BCM4377/4378/4387
 # from the T2 era on. The BCM4360 in 2013-2015 Macs is deliberately absent: it
 # runs the out-of-tree wl driver, which never reads a brcmfmac option.
+#
+# BCM4364 (14e4:4464) on T2 Macs is exempt. Its firmware needs the SAE offload
+# that 0x82000 disables to join WPA3-only networks, and with the quirk removed
+# it was verified against WPA2, transition-mode and WPA3 networks on a
+# MacBookPro16,1 (BCM4364B3) and reported working on a MacBookPro15,2. The
+# T2-less iMac19,x carries the same chip but is untested, so it keeps the quirk.
 sys_vendor="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
-product_name="$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)"
 
-if [[ $product_name == "MacBookPro16,1" ]]; then
-  echo "Detected a MacBookPro16,1; keeping WPA3 firmware offload enabled"
+if lspci -nn | grep "106b:180[12]" >/dev/null && lspci -nn | grep "14e4:4464" >/dev/null; then
+  echo "Detected BCM4364 on a T2 Mac; keeping WPA3 firmware offload enabled"
 elif lspci -nn | grep "106b:180[12]" >/dev/null ||
   { [[ $sys_vendor == Apple* ]] &&
     lspci -nn | grep -E "14e4:(43ba|43bb|43bc|43a3|43dc|4464|4488|4425|4433)" >/dev/null; }; then
